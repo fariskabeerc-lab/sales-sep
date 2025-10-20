@@ -8,7 +8,7 @@ import os
 st.set_page_config(page_title="Sales & Profit Dashboard", layout="wide")
 
 OUTLET_FILES = {
-    "Logistics": "log sep.Xlsx"
+    "Logistics": "log oct.Xlsx"
 }
 
 # ===============================
