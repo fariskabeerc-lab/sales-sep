@@ -155,7 +155,7 @@ st.subheader("📋 Item-wise Sales, Profit & Margin")
 
 if not filtered_df.empty:
     st.dataframe(
-        filtered_df[["Outlet", "Category", "Items", "Total Sales", "Total Profit", "Margin %"]]
+        filtered_df[["Outlet", "Category","Item Code", "Items", "Total Sales", "Total Profit", "Margin %"]]
         .sort_values(by="Margin %", ascending=True)
         .reset_index(drop=True),
         use_container_width=True,
