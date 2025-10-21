@@ -127,10 +127,17 @@ if selected_margin != "All":
 # SEARCH BAR
 # ===============================
 st.title("📊 Sales & Profit Insights (Sep)")
+# Search by Item Name
+search_name = st.text_input("🔎 Search Item Name", placeholder="Type an item name...")
 
-search_term = st.text_input("🔎 Search Item Name", placeholder="Type an item name...")
-if search_term:
-    filtered_df = filtered_df[filtered_df["Items"].str.contains(search_term, case=False, na=False)]
+# Search by Item Code
+search_code = st.text_input("🔎 Search Item Code", placeholder="Type an item code...")
+
+# Apply search filters
+if search_name:
+    filtered_df = filtered_df[filtered_df["Items"].str.contains(search_name, case=False, na=False)]
+if search_code:
+    filtered_df = filtered_df[filtered_df["Item Code"].astype(str).str.contains(search_code, case=False, na=False)]
 
 # ===============================
 # KEY INSIGHTS
