@@ -115,19 +115,12 @@ if not filtered_main.empty:
     total_sales = filtered_main["Total Sales"].sum()
     total_profit = filtered_main["Total Profit"].sum()
     avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
-    top_outlet = filtered_main.groupby("Outlet")["Total Sales"].sum().idxmax()
-    top_category = (
-        selected_category if selected_category != "All"
-        else filtered_main.groupby("Category")["Total Sales"].sum().idxmax()
-    )
 
     st.markdown("### 📈 Key Insights")
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3 = st.columns(3)
     c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
     c2.metric("📊 Total Profit (GP)", f"{total_profit:,.2f}")
     c3.metric("⚙️ Avg Margin %", f"{avg_margin:.2f}%")
-    c4.metric("🏪 Top Outlet", top_outlet)
-    c5.metric("🏷️ Top Category", top_category)
     st.markdown("---")
 
 # ===============================
