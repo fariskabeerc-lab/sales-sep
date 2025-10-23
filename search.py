@@ -86,14 +86,15 @@ search_code = st.sidebar.text_input("📟 Search by Item Code", placeholder="Typ
 # ===============================
 # FILTER LOGIC
 # ===============================
-filtered_df = df.copy()
-
+# Main filtered dataset (category + outlet filters, for top products)
+filtered_main = df.copy()
 if selected_category != "All":
-    filtered_df = filtered_df[filtered_df["Category"] == selected_category]
-
+    filtered_main = filtered_main[filtered_main["Category"] == selected_category]
 if selected_outlet != "All":
-    filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
+    filtered_main = filtered_main[filtered_main["Outlet"] == selected_outlet]
 
+# Filtered dataset including search (for tables & outlet summary)
+filtered_df = filtered_main.copy()
 search_term = None
 if search_name:
     filtered_df = filtered_df[filtered_df["Items"].str.contains(search_name, case=False, na=False)]
@@ -108,16 +109,16 @@ elif search_code:
 st.title("📦 Item Sales Across Outlets")
 
 # ===============================
-# KEY INSIGHTS AT TOP
+# KEY INSIGHTS
 # ===============================
-if not filtered_df.empty:
-    total_sales = filtered_df["Total Sales"].sum()
-    total_profit = filtered_df["Total Profit"].sum()
+if not filtered_main.empty:
+    total_sales = filtered_main["Total Sales"].sum()
+    total_profit = filtered_main["Total Profit"].sum()
     avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
-    top_outlet = filtered_df.groupby("Outlet")["Total Sales"].sum().idxmax()
+    top_outlet = filtered_main.groupby("Outlet")["Total Sales"].sum().idxmax()
     top_category = (
         selected_category if selected_category != "All"
-        else filtered_df.groupby("Category")["Total Sales"].sum().idxmax()
+        else filtered_main.groupby("Category")["Total Sales"].sum().idxmax()
     )
 
     st.markdown("### 📈 Key Insights")
@@ -130,7 +131,7 @@ if not filtered_df.empty:
     st.markdown("---")
 
 # ===============================
-# DISPLAY RESULTS
+# DISPLAY SEARCH RESULTS
 # ===============================
 if search_term and not filtered_df.empty:
     st.markdown(f"## 🧾 Results for: **{search_term}**")
@@ -140,12 +141,7 @@ if search_term and not filtered_df.empty:
     item_details = filtered_df[["Items", "Item Code", "Category", "Outlet", "Total Sales", "Total Profit", "Margin %"]] \
         .sort_values(by="Total Sales", ascending=False) \
         .reset_index(drop=True)
-
-    st.dataframe(
-        item_details,
-        use_container_width=True,
-        height=400
-    )
+    st.dataframe(item_details, use_container_width=True, height=400)
 
     # ----------- SECOND TABLE: Outlet Summary -----------
     st.markdown("### 🏪 Outlet-wise Total (for Searched Item)")
@@ -156,15 +152,10 @@ if search_term and not filtered_df.empty:
     )
     outlet_summary["Margin %"] = (outlet_summary["Total Profit"] / outlet_summary["Total Sales"] * 100).round(2)
     outlet_summary = outlet_summary.sort_values("Total Sales", ascending=False)
+    st.dataframe(outlet_summary[["Outlet", "Total Sales", "Total Profit", "Margin %"]], use_container_width=True, height=350)
 
-    st.dataframe(
-        outlet_summary[["Outlet", "Total Sales", "Total Profit", "Margin %"]],
-        use_container_width=True,
-        height=350
-    )
-
-    # ----------- CHART -----------
-    fig = px.bar(
+    # ----------- OUTLET-WISE BAR CHART -----------
+    fig_outlet = px.bar(
         outlet_summary,
         x="Outlet",
         y="Total Sales",
@@ -172,28 +163,16 @@ if search_term and not filtered_df.empty:
         text="Total Sales",
         title=f"Outlet-wise Sales & GP for '{search_term}'"
     )
-    fig.update_traces(texttemplate="%{text:.2s}", textposition="outside")
-    fig.update_layout(xaxis_title="", yaxis_title="Sales (AED)", height=500)
-    st.plotly_chart(fig, use_container_width=True)
-
-else:
-    st.info("Use the sidebar to filter or search an item by name/code to view its sales and GP across outlets.")
-
-
-
-
+    fig_outlet.update_traces(texttemplate="%{text:.2s}", textposition="outside")
+    fig_outlet.update_layout(xaxis_title="", yaxis_title="Sales (AED)", height=500)
+    st.plotly_chart(fig_outlet, use_container_width=True)
 
 # ===============================
-# TOP SELLING PRODUCTS BAR CHART
+# TOP 30 PRODUCTS BAR CHART
 # ===============================
 st.markdown("### 🏆 Top Selling Products")
-
-# Determine dataset to use for top selling chart
-top_products_df = filtered_main.copy()  # main filtered dataset by category/outlet filters
-
-# Aggregate by Items
 top_products = (
-    top_products_df.groupby("Items")
+    filtered_main.groupby("Items")
     .agg({"Total Sales": "sum"})
     .sort_values("Total Sales", ascending=False)
     .head(30)
