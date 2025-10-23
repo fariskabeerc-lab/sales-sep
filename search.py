@@ -178,3 +178,40 @@ if search_term and not filtered_df.empty:
 
 else:
     st.info("Use the sidebar to filter or search an item by name/code to view its sales and GP across outlets.")
+
+
+
+
+
+# ===============================
+# TOP SELLING PRODUCTS BAR CHART
+# ===============================
+st.markdown("### 🏆 Top Selling Products")
+
+# Determine dataset to use for top selling chart
+top_products_df = filtered_main.copy()  # main filtered dataset by category/outlet filters
+
+# Aggregate by Items
+top_products = (
+    top_products_df.groupby("Items")
+    .agg({"Total Sales": "sum"})
+    .sort_values("Total Sales", ascending=False)
+    .head(30)
+    .reset_index()
+)
+
+if not top_products.empty:
+    fig_top = px.bar(
+        top_products,
+        x="Total Sales",
+        y="Items",
+        orientation="h",
+        text="Total Sales",
+        title=f"Top Selling Products ({selected_outlet})" if selected_outlet != "All" else "Top Selling Products (All Outlets)"
+    )
+    fig_top.update_traces(texttemplate="%{text:.2s}", textposition="outside", marker_color="teal")
+    fig_top.update_layout(yaxis={"categoryorder": "total ascending"}, xaxis_title="Sales", height=700)
+    st.plotly_chart(fig_top, use_container_width=True)
+else:
+    st.info("No product data available for the selected filters.")
+
