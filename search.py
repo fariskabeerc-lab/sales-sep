@@ -114,13 +114,13 @@ st.title("📦 Item Sales Across Outlets")
 if not filtered_main.empty:
     total_sales = filtered_main["Total Sales"].sum()
     total_profit = filtered_main["Total Profit"].sum()
-    GP% = (total_profit / total_sales * 100) if total_sales > 0 else 0
+    gp_percent = (total_profit / total_sales * 100) if total_sales > 0 else 0
 
     st.markdown("### 📈 Key Insights")
     c1, c2, c3 = st.columns(3)
     c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
     c2.metric("📊 Total Profit (GP)", f"{total_profit:,.2f}")
-    c3.metric("⚙️ Avg Margin %", f"{GP%:.2f}%")
+    c3.metric("⚙️ GP%", f"{gp_percent:.2f}%")
     st.markdown("---")
 
 # ===============================
@@ -183,7 +183,7 @@ if not top_products.empty:
         y="Items",
         orientation="h",
         text="Total Sales",
-        hover_data={"Total Sales": ":,.2f", "GP%": True},  # shows GP% in tooltip
+        hover_data={"Total Sales": ":,.2f", "GP%": True},
         title=f"Top Selling Products ({selected_outlet})" if selected_outlet != "All" else "Top Selling Products (All Outlets)"
     )
     fig_top.update_traces(texttemplate="%{text:.2s}", textposition="outside", marker_color="teal")
