@@ -61,7 +61,7 @@ def load_all_outlet_data():
 
 df = load_all_outlet_data()
 
-# Cleanup
+# Data cleanup
 df = df[df["Category"].notna()]
 for col in ["Total Sales", "Total Profit"]:
     if col in df.columns:
@@ -73,30 +73,28 @@ df["Margin %"] = (df["Total Profit"] / df["Total Sales"] * 100).fillna(0).round(
 # ===============================
 st.sidebar.header("🔍 Filters")
 
-# Category filter (single select)
-categories = ["All"] + sorted(df["Category"].dropna().unique().tolist())
-selected_category = st.sidebar.selectbox("Select Category", categories)
+category_list = ["All"] + sorted(df["Category"].dropna().unique().tolist())
+selected_category = st.sidebar.selectbox("Select Category", category_list)
 
-# Apply category filter
-if selected_category != "All":
-    df = df[df["Category"] == selected_category]
+outlet_list = ["All"] + sorted(df["Outlet"].dropna().unique().tolist())
+selected_outlet = st.sidebar.selectbox("Select Outlet", outlet_list)
 
-# ===============================
-# PAGE TITLE
-# ===============================
-st.title("📦 Item Sales Across Outlets")
+st.sidebar.divider()
+search_name = st.sidebar.text_input("🔎 Search by Item Name", placeholder="Type item name...")
+search_code = st.sidebar.text_input("📟 Search by Item Code", placeholder="Type item code...")
 
 # ===============================
-# SEARCH SECTION
+# FILTER LOGIC
 # ===============================
-st.markdown("### 🔎 Search Items")
-
-search_name = st.text_input("Search by Item Name", placeholder="Type item name...")
-search_code = st.text_input("Search by Item Code", placeholder="Type item code...")
-
 filtered_df = df.copy()
-search_term = None
 
+if selected_category != "All":
+    filtered_df = filtered_df[filtered_df["Category"] == selected_category]
+
+if selected_outlet != "All":
+    filtered_df = filtered_df[filtered_df["Outlet"] == selected_outlet]
+
+search_term = None
 if search_name:
     filtered_df = filtered_df[filtered_df["Items"].str.contains(search_name, case=False, na=False)]
     search_term = search_name
@@ -105,75 +103,55 @@ elif search_code:
     search_term = search_code
 
 # ===============================
-# KEY INSIGHTS (Top Section)
-# ===============================
-if not filtered_df.empty:
-    total_sales = filtered_df["Total Sales"].sum()
-    total_profit = filtered_df["Total Profit"].sum()
-    avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
-    top_outlet = filtered_df.groupby("Outlet")["Total Sales"].sum().idxmax()
-    top_category = (
-        selected_category if selected_category != "All"
-        else df.groupby("Category")["Total Sales"].sum().idxmax()
-    )
-
-    st.markdown("### 📈 Key Insights")
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
-    c2.metric("📊 Total Profit (GP)", f"{total_profit:,.2f}")
-    c3.metric("⚙️ Avg Margin %", f"{avg_margin:.2f}%")
-    c4.metric("🏪 Top Outlet", top_outlet)
-    c5.metric("🏷️ Top Category", top_category)
-
-    st.markdown("---")
-
-# ===============================
 # DISPLAY RESULTS
 # ===============================
+st.title("📦 Item Sales Across Outlets")
+
 if search_term and not filtered_df.empty:
     st.markdown(f"## 🧾 Results for: **{search_term}**")
 
-    # -------- FIRST TABLE: Item Details per Outlet --------
+    # ----------- FIRST TABLE: Item-wise Details -----------
     st.markdown("### 📋 Item Details per Outlet")
-    item_details = filtered_df[["Items", "Item Code", "Outlet", "Total Sales", "Total Profit", "Margin %"]] \
+
+    item_details = filtered_df[["Items", "Item Code", "Category", "Outlet", "Total Sales", "Total Profit", "Margin %"]] \
         .sort_values(by="Total Sales", ascending=False) \
         .reset_index(drop=True)
-    st.dataframe(item_details, use_container_width=True, height=400)
 
-    # -------- SECOND TABLE: Outlet Summary --------
+    st.dataframe(
+        item_details,
+        use_container_width=True,
+        height=400
+    )
+
+    # ----------- SECOND TABLE: Outlet Summary -----------
     st.markdown("### 🏪 Outlet-wise Total (for Searched Item)")
+
     outlet_summary = (
-        filtered_df.groupby("Outlet")[["Total Sales", "Total Profit"]]
-        .sum()
+        filtered_df.groupby("Outlet")
+        .agg({"Total Sales": "sum", "Total Profit": "sum"})
         .reset_index()
     )
     outlet_summary["Margin %"] = (outlet_summary["Total Profit"] / outlet_summary["Total Sales"] * 100).round(2)
     outlet_summary = outlet_summary.sort_values("Total Sales", ascending=False)
 
-    total_sales = outlet_summary["Total Sales"].sum()
-    total_profit = outlet_summary["Total Profit"].sum()
-    avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
+    st.dataframe(
+        outlet_summary[["Outlet", "Total Sales", "Total Profit", "Margin %"]],
+        use_container_width=True,
+        height=350
+    )
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
-    c2.metric("📊 Total Profit (GP)", f"{total_profit:,.2f}")
-    c3.metric("⚙️ Avg Margin %", f"{avg_margin:.2f}%")
-
-    st.dataframe(outlet_summary, use_container_width=True, height=350)
-
-    # -------- CHART --------
+    # ----------- CHART -----------
     fig = px.bar(
         outlet_summary,
         x="Outlet",
         y="Total Sales",
         color="Margin %",
         text="Total Sales",
-        title=f"Outlet-wise Sales & GP for '{search_term}'",
-        color_continuous_scale="Blues"
+        title=f"Outlet-wise Sales & GP for '{search_term}'"
     )
     fig.update_traces(texttemplate="%{text:.2s}", textposition="outside")
     fig.update_layout(xaxis_title="", yaxis_title="Sales (AED)", height=500)
     st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.info("Search for an item name or code to view its sales and GP across outlets.")
+    st.info("Use the sidebar to filter or search an item by name/code to view its sales and GP across outlets.")
