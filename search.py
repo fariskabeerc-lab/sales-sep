@@ -103,16 +103,40 @@ elif search_code:
     search_term = search_code
 
 # ===============================
-# DISPLAY RESULTS
+# PAGE TITLE
 # ===============================
 st.title("📦 Item Sales Across Outlets")
 
+# ===============================
+# KEY INSIGHTS AT TOP
+# ===============================
+if not filtered_df.empty:
+    total_sales = filtered_df["Total Sales"].sum()
+    total_profit = filtered_df["Total Profit"].sum()
+    avg_margin = (total_profit / total_sales * 100) if total_sales > 0 else 0
+    top_outlet = filtered_df.groupby("Outlet")["Total Sales"].sum().idxmax()
+    top_category = (
+        selected_category if selected_category != "All"
+        else filtered_df.groupby("Category")["Total Sales"].sum().idxmax()
+    )
+
+    st.markdown("### 📈 Key Insights")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
+    c2.metric("📊 Total Profit (GP)", f"{total_profit:,.2f}")
+    c3.metric("⚙️ Avg Margin %", f"{avg_margin:.2f}%")
+    c4.metric("🏪 Top Outlet", top_outlet)
+    c5.metric("🏷️ Top Category", top_category)
+    st.markdown("---")
+
+# ===============================
+# DISPLAY RESULTS
+# ===============================
 if search_term and not filtered_df.empty:
     st.markdown(f"## 🧾 Results for: **{search_term}**")
 
     # ----------- FIRST TABLE: Item-wise Details -----------
     st.markdown("### 📋 Item Details per Outlet")
-
     item_details = filtered_df[["Items", "Item Code", "Category", "Outlet", "Total Sales", "Total Profit", "Margin %"]] \
         .sort_values(by="Total Sales", ascending=False) \
         .reset_index(drop=True)
@@ -125,7 +149,6 @@ if search_term and not filtered_df.empty:
 
     # ----------- SECOND TABLE: Outlet Summary -----------
     st.markdown("### 🏪 Outlet-wise Total (for Searched Item)")
-
     outlet_summary = (
         filtered_df.groupby("Outlet")
         .agg({"Total Sales": "sum", "Total Profit": "sum"})
