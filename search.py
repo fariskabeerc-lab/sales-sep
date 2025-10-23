@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+import plotly.express as px
 
 # ===============================
 # CONFIGURATION
 # ===============================
-st.set_page_config(page_title="Item Sales by Outlet", layout="wide")
+st.set_page_config(page_title="Item Sales Across Outlets", layout="wide")
 
 OUTLET_FILES = {
     "Hilal": "Hilal.Xlsx",
@@ -44,7 +45,7 @@ if not st.session_state.authenticated:
     st.stop()
 
 # ===============================
-# LOAD DATA
+# LOAD ALL OUTLET DATA
 # ===============================
 @st.cache_data
 def load_all_outlet_data():
@@ -60,7 +61,7 @@ def load_all_outlet_data():
 
 df = load_all_outlet_data()
 
-# Clean up data
+# Data cleanup
 df = df[df["Category"].notna()]
 for col in ["Total Sales", "Total Profit"]:
     if col in df.columns:
@@ -75,9 +76,6 @@ st.title("📦 Item Sales Across Outlets")
 search_name = st.text_input("🔎 Search by Item Name", placeholder="Type item name...")
 search_code = st.text_input("📟 Search by Item Code", placeholder="Type item code...")
 
-# ===============================
-# APPLY SEARCH
-# ===============================
 filtered_df = df.copy()
 search_term = None
 
@@ -92,7 +90,16 @@ elif search_code:
 # DISPLAY RESULTS
 # ===============================
 if search_term and not filtered_df.empty:
-    st.subheader(f"📊 Outlet-wise Sales for '{search_term}'")
+    # Show item info section
+    item_names = filtered_df["Items"].unique().tolist()
+    item_codes = filtered_df["Item Code"].astype(str).unique().tolist()
+    
+    st.markdown("### 🧾 Item Details")
+    st.write(f"**Item Name(s):** {', '.join(item_names)}")
+    st.write(f"**Item Code(s):** {', '.join(item_codes)}")
+
+    # Outlet-wise sales summary
+    st.markdown("### 🏪 Outlet-wise Sales & Profit Summary")
 
     outlet_summary = (
         filtered_df.groupby("Outlet")
@@ -108,26 +115,29 @@ if search_term and not filtered_df.empty:
 
     c1, c2, c3 = st.columns(3)
     c1.metric("💰 Total Sales", f"{total_sales:,.2f}")
-    c2.metric("📊 Total Profit", f"{total_profit:,.2f}")
+    c2.metric("📊 Total Profit (GP)", f"{total_profit:,.2f}")
     c3.metric("⚙️ Avg Margin %", f"{avg_margin:.2f}%")
 
-    st.dataframe(outlet_summary, use_container_width=True, height=400)
+    st.dataframe(
+        outlet_summary[["Outlet", "Total Sales", "Total Profit", "Margin %"]],
+        use_container_width=True,
+        height=400
+    )
 
     # ===============================
     # BAR CHART FOR VISUALIZATION
     # ===============================
-    import plotly.express as px
     fig = px.bar(
         outlet_summary,
         x="Outlet",
         y="Total Sales",
         color="Margin %",
-        title=f"Outlet-wise Sales & Margin for '{search_term}'",
-        text="Total Sales"
+        text="Total Sales",
+        title=f"Outlet-wise Sales & GP for '{search_term}'"
     )
     fig.update_traces(texttemplate="%{text:.2s}", textposition="outside")
     fig.update_layout(xaxis_title="", yaxis_title="Sales (AED)", height=500)
     st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.info("Search for an item name or code to view its outlet-wise sales performance.")
+    st.info("Search for an item name or code to view its outlet-wise sales and GP.")
