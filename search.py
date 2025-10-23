@@ -167,11 +167,14 @@ if search_term and not filtered_df.empty:
 st.markdown("### 🏆 Top Selling Products")
 top_products = (
     filtered_main.groupby("Items")
-    .agg({"Total Sales": "sum"})
+    .agg({"Total Sales": "sum", "Total Profit": "sum"})
     .sort_values("Total Sales", ascending=False)
     .head(30)
     .reset_index()
 )
+
+# Compute GP% for hover
+top_products["GP%"] = (top_products["Total Profit"] / top_products["Total Sales"] * 100).round(2)
 
 if not top_products.empty:
     fig_top = px.bar(
@@ -180,6 +183,7 @@ if not top_products.empty:
         y="Items",
         orientation="h",
         text="Total Sales",
+        hover_data={"Total Sales": ":,.2f", "GP%": True},  # shows GP% in tooltip
         title=f"Top Selling Products ({selected_outlet})" if selected_outlet != "All" else "Top Selling Products (All Outlets)"
     )
     fig_top.update_traces(texttemplate="%{text:.2s}", textposition="outside", marker_color="teal")
