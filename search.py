@@ -155,17 +155,18 @@ if search_term and not filtered_df.empty:
     st.dataframe(outlet_summary[["Outlet", "Total Sales", "Total Profit", "Margin %"]], use_container_width=True, height=350)
 
     # ----------- OUTLET-WISE BAR CHART -----------
-    fig_outlet = px.bar(
-        outlet_summary,
-        x="Outlet",
-        y="Total Sales",
-        color="Margin %",
-        text="Total Sales",
-        title=f"Outlet-wise Sales & GP for '{search_term}'"
-    )
-    fig_outlet.update_traces(texttemplate="%{text:.2s}", textposition="outside")
-    fig_outlet.update_layout(xaxis_title="", yaxis_title="Sales (AED)", height=500)
-    st.plotly_chart(fig_outlet, use_container_width=True)
+    if selected_outlet == "All":
+        fig_outlet = px.bar(
+            outlet_summary,
+            x="Outlet",
+            y="Total Sales",
+            color="Margin %",
+            text="Total Sales",
+            title=f"Outlet-wise Sales & GP for '{search_term}'"
+        )
+        fig_outlet.update_traces(texttemplate="%{text:.2s}", textposition="outside")
+        fig_outlet.update_layout(xaxis_title="", yaxis_title="Sales (AED)", height=500)
+        st.plotly_chart(fig_outlet, use_container_width=True)
 
 # ===============================
 # TOP 30 PRODUCTS BAR CHART
@@ -193,4 +194,3 @@ if not top_products.empty:
     st.plotly_chart(fig_top, use_container_width=True)
 else:
     st.info("No product data available for the selected filters.")
-
