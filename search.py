@@ -90,16 +90,23 @@ elif search_code:
 # DISPLAY RESULTS
 # ===============================
 if search_term and not filtered_df.empty:
-    # Show item info section
-    item_names = filtered_df["Items"].unique().tolist()
-    item_codes = filtered_df["Item Code"].astype(str).unique().tolist()
-    
-    st.markdown("### 🧾 Item Details")
-    st.write(f"**Item Name(s):** {', '.join(item_names)}")
-    st.write(f"**Item Code(s):** {', '.join(item_codes)}")
+    st.markdown(f"## 🧾 Results for: **{search_term}**")
 
-    # Outlet-wise sales summary
-    st.markdown("### 🏪 Outlet-wise Sales & Profit Summary")
+    # ----------- FIRST TABLE: Item-wise Details -----------
+    st.markdown("### 📋 Item Details per Outlet")
+
+    item_details = filtered_df[["Items", "Item Code", "Outlet", "Total Sales", "Total Profit", "Margin %"]] \
+        .sort_values(by="Total Sales", ascending=False) \
+        .reset_index(drop=True)
+
+    st.dataframe(
+        item_details,
+        use_container_width=True,
+        height=400
+    )
+
+    # ----------- SECOND TABLE: Outlet Summary -----------
+    st.markdown("### 🏪 Outlet-wise Total (for Searched Item)")
 
     outlet_summary = (
         filtered_df.groupby("Outlet")
@@ -121,12 +128,10 @@ if search_term and not filtered_df.empty:
     st.dataframe(
         outlet_summary[["Outlet", "Total Sales", "Total Profit", "Margin %"]],
         use_container_width=True,
-        height=400
+        height=350
     )
 
-    # ===============================
-    # BAR CHART FOR VISUALIZATION
-    # ===============================
+    # ----------- OPTIONAL: CHART -----------
     fig = px.bar(
         outlet_summary,
         x="Outlet",
@@ -140,4 +145,4 @@ if search_term and not filtered_df.empty:
     st.plotly_chart(fig, use_container_width=True)
 
 else:
-    st.info("Search for an item name or code to view its outlet-wise sales and GP.")
+    st.info("Search for an item name or code to view its sales and GP across outlets.")
